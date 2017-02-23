@@ -20,6 +20,12 @@
 #  LIBBASES - base name of objects to add to library (no directory or suffix).
 #  LIB - Library that will contain objects from this build, in LIBDIR
 #  SUBDIRS - subdirectories for recursive make
+#  CPROGS = C programs to build
+#  CXXPROGS = C+ programs to build
+#  TESTCPROGS = test C programs to build
+#  TESTCXXPROGS = test C++ programs to build
+#  progName_PROGBASES = basename of non-library objects to link for $progName
+#  PROG_LIBFILES = librarys file to add for all programs
 #
 # often useful to add (+=) to these variables are defs.mk is included
 #   CFLAGS_INCL
@@ -33,6 +39,7 @@ SYS = $(shell uname -s)
 BINDIR = ${ROOT}/bin
 OBJDIR = ${ROOT}/objs
 LIBDIR = ${ROOT}/lib
+TESTBINDIR = ${ROOT}/testbin
 
 
 ##
@@ -96,8 +103,6 @@ else
 endif
 
 
-
-
 ##
 # assemble full set of flags
 ##
@@ -119,3 +124,53 @@ sonlib_lib = ${LIBDIR}/sonlib.a
 
 cutest_incl = ${ROOT}/mods/sonLib/c/cutest
 cutest_lib = ${LIBDIR}/cutest.a
+
+# location of Tokyo cabinet
+ifndef tokyoCabinetLib
+ifneq ($(wildcard /hive/groups/recon/local/include/tcbdb.h),)
+    # hgwdev hive install
+    tcPrefix = /hive/groups/recon/local
+    tokyoCabinetIncl = -I${tcPrefix}/include
+    tokyoCabinetLib = -L${tcPrefix}/lib -Wl,-rpath,${tcPrefix}/lib -ltokyocabinet -lz -lbz2 -lpthread -lm
+else ifneq ($(wildcard /opt/local/include/tcbdb.h),)
+    # OS/X with TC installed from MacPorts
+    tcPrefix = /opt/local
+    tokyoCabinetIncl = -I${tcPrefix}/include -DHAVE_TOKYO_CABINET=1
+    tokyoCabinetLib = -L${tcPrefix}/lib -Wl,-rpath,${tcPrefix}/lib -ltokyocabinet -lz -lbz2 -lpthread -lm
+else ifneq ($(wildcard /usr/local/include/tcbdb.h),)
+    # /usr/local install (FreeBSD, etc)
+    tcPrefix = /usr/local
+    tokyoCabinetIncl = -I${tcPrefix}/include -DHAVE_TOKYO_CABINET=1
+    tokyoCabinetLib = -L${tcPrefix}/lib -Wl,-rpath,${tcPrefix}/lib -ltokyocabinet -lz -lbz2 -lpthread -lm
+else ifneq ($(wildcard /usr/include/tcbdb.h),)
+    # /usr install (Ubuntu, and probably most Debain-based systems)
+    tcPrefix = /usr
+    tokyoCabinetIncl = -I${tcPrefix}/include -DHAVE_TOKYO_CABINET=1
+    tokyoCabinetLib = -L${tcPrefix}/lib -Wl,-rpath,${tcPrefix}/lib -ltokyocabinet -lz -lbz2 -lpthread -lm
+endif
+endif
+
+# location of Kyoto Tycoon
+ifndef kyotoTycoonLib
+ifneq ($(wildcard /hive/groups/recon/local/include/ktcommon.h),)
+    # hgwdev hive install
+    ttPrefix = /hive/groups/recon/local
+    kyotoTycoonIncl = -I${ttPrefix}/include -DHAVE_KYOTO_TYCOON=1
+    kyotoTycoonLib = -L${ttPrefix}/lib -Wl,-rpath,${ttPrefix}/lib -lkyototycoon -lkyotocabinet -lz -lbz2 -lpthread -lm -lstdc++
+else ifneq ($(wildcard /opt/local/include/ktcommon.h),)
+    # OS/X with TC installed from MacPorts
+    ttPrefix = /opt/local
+    kyotoTycoonIncl = -I${ttPrefix}/include -DHAVE_KYOTO_TYCOON=1 
+    kyotoTycoonLib = -L${ttPrefix}/lib -Wl,-rpath,${ttPrefix}/lib -lkyototycoon -lkyotocabinet -lz -lbz2 -lpthread -lm -lstdc++ 
+else ifneq ($(wildcard /usr/local/include/ktcommon.h),)
+    # /usr/local install (FreeBSD, etc)
+    ttPrefix = /usr/local
+    kyotoTycoonIncl = -I${ttPrefix}/include -DHAVE_KYOTO_TYCOON=1 
+    kyotoTycoonLib = -L${ttPrefix}/lib -Wl,-rpath,${ttPrefix}/lib -lkyototycoon -lkyotocabinet -lz -lbz2 -lpthread -lm -lstdc++
+else ifneq ($(wildcard /usr/include/ktcommon.h),)
+   # /usr install (Ubuntu)
+   ttPrefix = /usr
+   kyotoTycoonIncl = -I${ttPrefix}/include -DHAVE_KYOTO_TYCOON=1 
+   kyotoTycoonLib = -L${ttPrefix}/lib -Wl,-rpath,${ttPrefix}/lib -lkyototycoon -lkyotocabinet -lz -lbz2 -lpthread -lm -lstdc++
+endif
+endif

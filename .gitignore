@@ -3,6 +3,6 @@
 *.dSYM/
 *.pyc
 .emacs.bak
-lib
-objs
-bin
+/build
+/mods
+.sconsign.dblite 
