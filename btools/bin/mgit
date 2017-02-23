@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+"""meta git program to manage subtrees"""
+
+import argparse
+
