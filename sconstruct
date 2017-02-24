@@ -11,23 +11,27 @@ cxx11Flags = ["-std=c++11"]
 warnOps = ["-Wall", "--pedantic", "-Wno-error=unused-result"]
 if os.path.exists(centos6DevBin):
     # hgwdev, use -Werror here
-    env.Replace(CC = os.path.join(centos6DevBin, "gcc"))
-    env.Append(CFLAGS = c99Flags + warnOps + ["-Werror"])
-    env.Replace(CXX = os.path.join(centos6DevBin, "g++"))
-    env.Append(CXXFLAGS = cxx11Flags + warnOps + ["-Werror"])
+    env.Replace(CC=os.path.join(centos6DevBin, "gcc"))
+    env.Append(CFLAGS=c99Flags + warnOps + ["-Werror"])
+    env.Replace(CXX=os.path.join(centos6DevBin, "g++"))
+    env.Append(CXXFLAGS=cxx11Flags + warnOps + ["-Werror"])
 elif os.uname()[0] == "Darwin":
     # Mac
-    env.Replace(CC = "clang")
-    env.Append(CFLAGS = c99Flags + warnOps)
-    env.Replace(CXX = "clang++")
-    env.Append(CXXFLAGS = cxx11Flags + warnOps)
+    env.Replace(CC="clang")
+    env.Append(CFLAGS=c99Flags + warnOps)
+    env.Replace(CXX="clang++")
+    env.Append(CXXFLAGS=cxx11Flags + warnOps)
 else:
     # modern linux
-    env.Replace(CC =  "gcc")
-    env.Append(CFLAGS = c99Flags + warnOps)
-    env.Replace(CXX = "g++")
-    env.Append(CXXFLAGS = cxx11Flags + warnOps)
+    env.Replace(CC= "gcc")
+    env.Append(CFLAGS=c99Flags + warnOps)
+    env.Replace(CXX="g++")
+    env.Append(CXXFLAGS=cxx11Flags + warnOps)
 
-env.VariantDir("build", duplicate=0);
+variantDir = "build"
+env.Replace(LIBPREFIX="lib/")
 
-SConscript("mods/sonLib/sconscript", exports=("env"))
+SConscript("mods/sonLib/sconscript", exports=("env"),
+           variant_dir=variantDir, duplicate=False)
+
+
