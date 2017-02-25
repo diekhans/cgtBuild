@@ -11,10 +11,12 @@ cxx11Flags = ["-std=c++11"]
 warnOps = ["-Wall", "--pedantic", "-Wno-error=unused-result"]
 if os.path.exists(centos6DevBin):
     # hgwdev, use -Werror here
+    werror = ["-Werror"]
+    werror = []  # FIXME
     env.Replace(CC=os.path.join(centos6DevBin, "gcc"))
-    env.Append(CFLAGS=c99Flags + warnOps + ["-Werror"])
+    env.Append(CFLAGS=c99Flags + warnOps + werror)
     env.Replace(CXX=os.path.join(centos6DevBin, "g++"))
-    env.Append(CXXFLAGS=cxx11Flags + warnOps + ["-Werror"])
+    env.Append(CXXFLAGS=cxx11Flags + warnOps + werror)
 elif os.uname()[0] == "Darwin":
     # Mac
     env.Replace(CC="clang")
@@ -28,10 +30,12 @@ else:
     env.Replace(CXX="g++")
     env.Append(CXXFLAGS=cxx11Flags + warnOps)
 
+# use C++ to link, as we have C++ modules
+env.Replace(LINK=env['CXX'])
+
 variantDir = "build"
 env.Replace(LIBPREFIX="lib/")
 
 SConscript("mods/sonLib/sconscript", exports=("env"),
            variant_dir=variantDir, duplicate=False)
-
 

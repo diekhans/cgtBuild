@@ -1,6 +1,11 @@
 import os
 
+# library base names
 SONLIB_LIB_NAME = "sonlib"
+CUTEST_LIB_NAME = "cutest"
+
+# special output paths
+TEST_BIN_DIR = "testbin"
 
 
 ###
