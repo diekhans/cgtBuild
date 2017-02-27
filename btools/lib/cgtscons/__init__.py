@@ -26,3 +26,21 @@ def objectPathsBuild(env, libOrProgName, srcFiles):
     """explictly build objects paths so they end up in
     VariantDir/objs/libOrProgName"""
     return [_objectPathBuild(env, libOrProgName, srcFile) for srcFile in srcFiles]
+
+
+##
+# make a symbolic link
+##
+def mkRelSymLink(target, source, env):
+    "construct relative symbolic link"
+    targetAbs = os.path.abspath(str(target[0]))
+    sourceAbs = os.path.abspath(str(source[0]))
+    commonPre = os.path.commonprefix((targetAbs, sourceAbs))
+    sourceTail = sourceAbs[len(commonPre):]
+    # count directories up from target
+    numDirs = sourceTail.count("/")
+    sourceRel = os.path.join(*((numDirs * ['..']) + [sourceTail]))
+    os.symlink(sourceRel, targetAbs)
+
+def envRelSymlink(env, source, target):
+    env.Command(target, source, mkRelSymLink)
