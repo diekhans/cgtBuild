@@ -2,7 +2,7 @@ import os
 import sys
 sys.path.append(os.path.abspath("btools/lib"))
 
-env = Environment()
+env = Environment(tools=['default','textfile'])
 
 centos6DevBin = "/opt/rh/devtoolset-3/root/usr/bin"
 
@@ -39,3 +39,7 @@ env.Replace(LIBPREFIX="lib/")
 SConscript("mods/sonLib/sconscript", exports=("env"),
            variant_dir=variantDir, duplicate=False)
 
+# empty top level python package
+env.Textfile(target=os.path.join(variantDir, "lib/py/cgt/__init__.py"),
+             source=[])
+             

@@ -1,9 +1,5 @@
-ROOT = .
 
-include ${ROOT}/rules/defs.mk
-SUBDIRS = mods/sonLib
-
-include ${ROOT}/rules/rules.mk
+all:
 
 # backup of .git dirs
 savebak:
