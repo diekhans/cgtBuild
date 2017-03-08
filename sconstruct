@@ -2,7 +2,8 @@ import os
 import sys
 sys.path.append(os.path.abspath("btools/lib"))
 
-env = Environment(tools=['default','textfile'])
+#FIXME: env = Environment(tools=['default', 'textfile', 'symlink'], toolpath=["btools/lib/scons"])
+env = Environment(tools=['default', 'textfile'])
 
 centos6DevBin = "/opt/rh/devtoolset-3/root/usr/bin"
 
@@ -33,13 +34,14 @@ else:
 # use C++ to link, as we have C++ modules
 env.Replace(LINK=env['CXX'])
 
-variantDir = "build"
 env.Replace(LIBPREFIX="lib/")
 
 SConscript("mods/sonLib/sconscript", exports=("env"),
-           variant_dir=variantDir, duplicate=False)
+           variant_dir="build/sonLib", duplicate=False)
+#SConscript("mods/cactus/sconscript", exports=("env"),
+#           variant_dir="build/cactus", duplicate=False)
 
 # empty top level python package
-env.Textfile(target=os.path.join(variantDir, "lib/py/cgt/__init__.py"),
-             source=[])
+#env.Textfile(target=os.path.join(variantDir, "lib/py/cgt/__init__.py"),
+#             source=[])
              
