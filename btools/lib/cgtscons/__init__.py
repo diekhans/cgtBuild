@@ -1,6 +1,7 @@
 """
 Definitions and functions use for building CGT
 """
+from __future__ import print_function
 import os
 
 # library base names
@@ -11,6 +12,8 @@ CACTUS_LIB_NAME = "cactus"
 # special output paths
 TEST_BIN_DIR = "testbin"
 BIN_DIR = "bin"
+INCLUDE_DIR = "include"
+
 
 # run directories at root, all output is installed from build directories to here.
 RUN_DIR = "#/run"
@@ -34,6 +37,14 @@ def getSrcPaths(srcDir, srcFiles):
         return [os.path.join(srcDir, sf) for sf in srcFiles]
     
 
+def globSrcPaths(env, srcDir, globPat, excludes=[]):
+    """glob for all files in srcDir matching globPat, excluding excludes
+    in srcDir"""
+    excludePaths = [os.path.join(srcDir, f) for f in excludes]
+    return env.Glob(os.path.join(srcDir, globPat),
+                    exclude=excludePaths)
+    
+
 def linkProg(env, progName, srcFiles):
     """link a program, with specified srcs from srcFiles in srcDir.
     If srcDir can be none, if srcFiles contains full paths"""
@@ -45,6 +56,16 @@ def linkTestProg(env, progName, srcFiles):
     If srcDir can be none, if srcFiles contains full paths"""
     env.Program(target=os.path.join(TEST_BIN_DIR, progName), source=srcFiles)
 
+
+def globInclude(slEnv, includeDirs):
+    """get list of all include files (*.h) in the specified directories"""
+    return map(lambda d: slEnv.Glob("{}/*.h".format(d)), includeDirs)
+    
+
+def copyBuildInclude(env, srcFiles):
+    "copy files to the build include directory"
+    env.Install(INCLUDE_DIR, srcFiles)
+    
 
 ##
 # make a symbolic link
@@ -116,11 +137,13 @@ def libAddKyotoDatabase(env):
                useRPath=True)
 
 def libAddSonLib(env):
-    libAdd(env, "#/trees/sonLib/sonlib/include",
-           "./lib", SONLIB_LIB_NAME)
+    libAdd(env, "#/build/sonLib/include",
+           "#/build/sonLib/lib", SONLIB_LIB_NAME)
 
 def libAddCuTest(env):
-    libAdd(env, "#/trees/sonLib/cutest",
-           "./lib", CUTEST_LIB_NAME,)
+    libAdd(env, "#/build/sonLib/include",
+           "#build/sonLib/lib", CUTEST_LIB_NAME)
     
-
+def libAddCactus(env):
+    libAdd(env, "#/build/cactus/include",
+           "#/build/cactus/lib", CUTEST_LIB_NAME)
