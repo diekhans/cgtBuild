@@ -3,7 +3,6 @@ Definitions and functions use for building CGT
 """
 from __future__ import print_function
 import os
-from SCons.Script import Copy
 
 # library base names
 SONLIB_LIB_NAME = "sonlib"
@@ -11,24 +10,44 @@ CUTEST_LIB_NAME = "cutest"
 CACTUS_LIB_NAME = "cactus"
 CPECAN_LIB_NAME = "cpecan"
 
-# special output paths
-TEST_BIN_DIR = "testbin"
-BIN_DIR = "bin"
-INCLUDE_DIR = "include"
+# access to output directories is via function to allow for configuration
+# using env in the future
 
+def _outputGet(env, dirname, fname):
+    """get an output directory or file in that directory"""
+    p = os.path.join("#/output", dirname)
+    if fname is None:
+        return p
+    else:
+        return os.path.join(p, fname)
 
-# run directories at root, all output is installed from build directories to here.
-RUN_DIR = "#/run"
-#RUN_BIN_DIR = os.path.join(RUN_DIR, "bin")
-# RUN_LIB_DIR = os.path.join(RUN_DIR, "lib")
-# RUN_INCLUDE_DIR = os.path.join(RUN_DIR, "include")
+def outputBinDir(env, fname=None):
+    """get bin output directory or file in that directory"""
+    return _outputGet(env, "bin", fname)
+
+def outputTestBinDir(env, fname=None):
+    """get testbin output directory or file in that directory"""
+    return _outputGet(env, "testbin", fname)
+
+def outputLibDir(env, fname=None):
+    """get lib output directory or file in that directory"""
+    return _outputGet(env, "lib", fname)
+
+def outputIncludeDir(env, fname=None):
+    """get include output directory or file in that directory"""
+    return _outputGet(env, "include", fname)
+
+def libFileName(libbase):
+    "tack `lib' on the front of the library base name"
+    return "lib" + libbase + ".a"
 
 ##
 # building and linking
 ##
 def buildStaticLibrary(env, libBaseName, srcs):
     """link a static library"""
-    env.StaticLibrary(target="lib" + libBaseName, source=srcs)
+    env.StaticLibrary(libFileName(libBaseName), srcs)
+
 
 def getSrcPaths(srcDir, srcFiles):
     """Combine srcDir and srcFiles, If srcDir can be none, if srcFiles
@@ -50,36 +69,27 @@ def globSrcPaths(env, srcDir, globPat, excludes=[]):
 def linkProg(env, progName, srcFiles):
     """link a program, with specified srcs from srcFiles in srcDir.
     If srcDir can be none, if srcFiles contains full paths"""
-    env.Program(target=os.path.join(BIN_DIR, progName), source=srcFiles)
+    env.Program(progName, srcFiles)
+    env.Install(outputBinDir(env, progName), progName)
 
 
 def linkTestProg(env, progName, srcFiles):
     """link a test program, with specified srcs from srcFiles in srcDir.
     If srcDir can be none, if srcFiles contains full paths"""
-    env.Program(target=os.path.join(TEST_BIN_DIR, progName), source=srcFiles)
+    env.Program(progName, srcFiles)
+    env.Install(outputTestBinDir(progName), progName)
 
 
 def globInclude(env, includeDirs):
     """get list of all include files (*.h) in the specified directories"""
-    incls = []
+    inclFiles = []
     for includeDir in includeDirs:
-        incls.extend(env.Glob("{}/*.h".format(includeDir)))
-    return incls
+        inclFiles.extend(env.Glob("{}/*.h".format(includeDir)))
+    return inclFiles
 
-def copyBuildInclude(env, srcFiles):
-    "copy files to the build include directory"
-    # For some reason, if the include file was adjacent to the sconscript file
-    # then in created a circular dependency on the .h file in variant directory,
-    # even though the srcFiles are fully qualified paths.  Doing the env.Dir below
-    # works around this.
-    #env.Install(os.path.join(env.Dir('.').abspath, INCLUDE_DIR), srcFiles)
-    print("Dir", env.Dir('.').abspath)
-    for srcFile in srcFiles:
-        print("t", os.path.join(env.Dir('.').abspath, "include", os.path.basename(srcFile.path)))
-        print("s", srcFile)
-        env.Command(os.path.join(env.Dir('.').abspath, "include", os.path.basename(srcFile.path)),
-                    srcFile.abspath,
-                    Copy('$TARGET', '$SOURCE'))
+def installIncludes(env, includeFiles):
+    "copy files to the run include directory"
+    env.Install(outputIncludeDir(env), includeFiles)
     
 
 ##
@@ -99,6 +109,7 @@ def mkRelSymLink(target, source, env):
     os.symlink(sourceRel, targetAbs)
 
 def envRelSymlink(env, source, target):
+    """build a symbolic link, doesn't work with variant directory"""
     env.Command(target, source, mkRelSymLink)
 
 
@@ -151,18 +162,22 @@ def libAddKyotoDatabase(env):
                libDepends=["z", "bz2", "pthread", "m", "-lstdc++"],
                useRPath=True)
 
+def libAddVariant(env, modsub, libBases, libDepends=None, libDefine=None):
+    "add include and libraries in the variant build directory"
+    libAdd(env,
+           os.path.join("#/build", modsub, "include"),
+           os.path.join("#/build", modsub, "lib"),
+           libBases)
+    
+
 def libAddSonLib(env):
-    libAdd(env, "#/build/sonLib/include",
-           "#/build/sonLib/lib", SONLIB_LIB_NAME)
+    libAddVariant(env, "sonLib/sonLib", SONLIB_LIB_NAME)
 
 def libAddCuTest(env):
-    libAdd(env, "#/build/sonLib/include",
-           "#build/sonLib/lib", CUTEST_LIB_NAME)
+    libAddVariant(env, "sonLib/cuTest", CUTEST_LIB_NAME)
     
 def libAddCactus(env):
-    libAdd(env, "#/build/cactus/include",
-           "#/build/cactus/lib", CACTUS_LIB_NAME)
+    libAddVariant(env, "cactus", CACTUS_LIB_NAME)
 
 def libAddCPecan(env):
-    libAdd(env, "#/build/cPecan/include",
-           "#/build/cPecan/lib", CPECAN_LIB_NAME)
+    libAddVariant(env, "cPecan", CPECAN_LIB_NAME)
