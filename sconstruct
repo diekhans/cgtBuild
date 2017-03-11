@@ -38,8 +38,10 @@ env.Replace(LIBPREFIX="lib/")
 
 SConscript("trees/sonLib/sconscript", exports=("env"),
            variant_dir="build/sonLib", duplicate=False)
-SConscript("trees/cactus/sconscript", exports=("env"),
-           variant_dir="build/cactus", duplicate=False)
+SConscript("trees/cPecan/sconscript", exports=("env"),
+           variant_dir="build/cPecan", duplicate=False)
+# SConscript("trees/cactus/sconscript", exports=("env"),
+#            variant_dir="build/cactus", duplicate=False)
 
 # empty top level python package
 #env.Textfile(target=os.path.join(variantDir, "lib/py/cgt/__init__.py"),

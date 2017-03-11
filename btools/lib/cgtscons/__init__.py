@@ -3,11 +3,13 @@ Definitions and functions use for building CGT
 """
 from __future__ import print_function
 import os
+from SCons.Script import Copy
 
 # library base names
 SONLIB_LIB_NAME = "sonlib"
 CUTEST_LIB_NAME = "cutest"
 CACTUS_LIB_NAME = "cactus"
+CPECAN_LIB_NAME = "cpecan"
 
 # special output paths
 TEST_BIN_DIR = "testbin"
@@ -57,14 +59,27 @@ def linkTestProg(env, progName, srcFiles):
     env.Program(target=os.path.join(TEST_BIN_DIR, progName), source=srcFiles)
 
 
-def globInclude(slEnv, includeDirs):
+def globInclude(env, includeDirs):
     """get list of all include files (*.h) in the specified directories"""
-    return map(lambda d: slEnv.Glob("{}/*.h".format(d)), includeDirs)
-    
+    incls = []
+    for includeDir in includeDirs:
+        incls.extend(env.Glob("{}/*.h".format(includeDir)))
+    return incls
 
 def copyBuildInclude(env, srcFiles):
     "copy files to the build include directory"
-    env.Install(INCLUDE_DIR, srcFiles)
+    # For some reason, if the include file was adjacent to the sconscript file
+    # then in created a circular dependency on the .h file in variant directory,
+    # even though the srcFiles are fully qualified paths.  Doing the env.Dir below
+    # works around this.
+    #env.Install(os.path.join(env.Dir('.').abspath, INCLUDE_DIR), srcFiles)
+    print("Dir", env.Dir('.').abspath)
+    for srcFile in srcFiles:
+        print("t", os.path.join(env.Dir('.').abspath, "include", os.path.basename(srcFile.path)))
+        print("s", srcFile)
+        env.Command(os.path.join(env.Dir('.').abspath, "include", os.path.basename(srcFile.path)),
+                    srcFile.abspath,
+                    Copy('$TARGET', '$SOURCE'))
     
 
 ##
@@ -146,4 +161,8 @@ def libAddCuTest(env):
     
 def libAddCactus(env):
     libAdd(env, "#/build/cactus/include",
-           "#/build/cactus/lib", CUTEST_LIB_NAME)
+           "#/build/cactus/lib", CACTUS_LIB_NAME)
+
+def libAddCPecan(env):
+    libAdd(env, "#/build/cPecan/include",
+           "#/build/cPecan/lib", CPECAN_LIB_NAME)
