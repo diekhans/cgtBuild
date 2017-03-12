@@ -14,12 +14,13 @@ CPECAN_LIB_NAME = "cpecan"
 # using env in the future
 
 def _outputGet(env, dirname, fname):
-    """get an output directory or file in that directory"""
+    """get an output directory or file in that directory.  Only the basename of fname
+    is used, which might be a scons Node"""
     p = os.path.join("#/output", dirname)
     if fname is None:
         return p
     else:
-        return os.path.join(p, fname)
+        return os.path.join(p, os.path.basename(str(fname)))
 
 def outputBinDir(env, fname=None):
     """get bin output directory or file in that directory"""
@@ -42,12 +43,38 @@ def libFileName(libbase):
     return "lib" + libbase + ".a"
 
 ##
-# building and linking
+# Building and linking, with results in output directory.
+# this also copies includes to output.
 ##
+
+def addOutputIncludeAlias(env, outInclude):
+    """an alias is create for all output includes, and only add the
+    alias to the defaults targets.  This prevents and up to date message
+    for each include. """
+    env.Default(env.Alias("outputIncludes", outInclude))
+
+def globInclude(env, includeDirs):
+    """get list of all include files (*.h) in the specified directories"""
+    inclFiles = []
+    for includeDir in includeDirs:
+        inclFiles.extend(env.Glob("{}/*.h".format(includeDir)))
+    return inclFiles
+
+def makeIncludesDepends(env, includeFiles):
+    "copy files to the run include directory"
+    # create dependencies so files are installed as needed and then insist they
+    # are installed
+    for incl in includeFiles:
+        env.Depends(outputIncludeDir(env, incl), incl)
+        oi = env.Install(outputIncludeDir(env), incl)
+        addOutputIncludeAlias(env, oi)
+
 def buildStaticLibrary(env, libBaseName, srcs):
     """link a static library"""
-    env.StaticLibrary(libFileName(libBaseName), srcs)
-
+    bl = env.StaticLibrary(libFileName(libBaseName), srcs)
+    ol = env.Install(outputLibDir(env), bl)
+    env.Depends(ol, bl)
+    env.Default(ol)
 
 def getSrcPaths(srcDir, srcFiles):
     """Combine srcDir and srcFiles, If srcDir can be none, if srcFiles
@@ -69,28 +96,17 @@ def globSrcPaths(env, srcDir, globPat, excludes=[]):
 def linkProg(env, progName, srcFiles):
     """link a program, with specified srcs from srcFiles in srcDir.
     If srcDir can be none, if srcFiles contains full paths"""
-    env.Program(progName, srcFiles)
-    env.Install(outputBinDir(env, progName), progName)
+    bp = env.Program(progName, srcFiles)
+    op = env.Install(outputBinDir(env), bp)
+    env.Default(op)
 
 
 def linkTestProg(env, progName, srcFiles):
     """link a test program, with specified srcs from srcFiles in srcDir.
     If srcDir can be none, if srcFiles contains full paths"""
-    env.Program(progName, srcFiles)
-    env.Install(outputTestBinDir(progName), progName)
-
-
-def globInclude(env, includeDirs):
-    """get list of all include files (*.h) in the specified directories"""
-    inclFiles = []
-    for includeDir in includeDirs:
-        inclFiles.extend(env.Glob("{}/*.h".format(includeDir)))
-    return inclFiles
-
-def installIncludes(env, includeFiles):
-    "copy files to the run include directory"
-    env.Install(outputIncludeDir(env), includeFiles)
-    
+    bp = env.Program(progName, srcFiles)
+    op = env.Install(outputTestBinDir(env), bp)
+    env.Default(op)
 
 ##
 # make a symbolic link
@@ -162,19 +178,18 @@ def libAddKyotoDatabase(env):
                libDepends=["z", "bz2", "pthread", "m", "-lstdc++"],
                useRPath=True)
 
-def libAddVariant(env, modsub, libBases, libDepends=None, libDefine=None):
+def libAddVariant(env, mod, libBases, libDepends=None, libDefine=None):
     "add include and libraries in the variant build directory"
     libAdd(env,
-           os.path.join("#/build", modsub, "include"),
-           os.path.join("#/build", modsub, "lib"),
-           libBases)
-    
+           os.path.join(outputIncludeDir(env)),
+           os.path.join(outputLibDir(env)),
+           libBases, libDepends=libDepends, libDefine=libDefine)
 
 def libAddSonLib(env):
-    libAddVariant(env, "sonLib/sonLib", SONLIB_LIB_NAME)
+    libAddVariant(env, "sonLib", SONLIB_LIB_NAME)
 
 def libAddCuTest(env):
-    libAddVariant(env, "sonLib/cuTest", CUTEST_LIB_NAME)
+    libAddVariant(env, "sonLib", CUTEST_LIB_NAME)
     
 def libAddCactus(env):
     libAddVariant(env, "cactus", CACTUS_LIB_NAME)
