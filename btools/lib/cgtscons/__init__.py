@@ -4,14 +4,59 @@ Definitions and functions use for building CGT
 from __future__ import print_function
 import os
 
+##
+# Notes:
+#  - str() is called on directory and file names to allow them to be either strings
+#    or Scons Node objects.
+##
+
+
+
+# module names
+SONLIB_MOD_NAME = "sonLib"
+CACTUS_MOD_NAME = "cactus"
+CPECAN_MOD_NAME = "cPecan"
+
+
 # library base names
 SONLIB_LIB_NAME = "sonlib"
 CUTEST_LIB_NAME = "cutest"
 CACTUS_LIB_NAME = "cactus"
 CPECAN_LIB_NAME = "cpecan"
 
+##
+# Access to module files
+##
+def _moduleGet(env, mod, fname=None):
+    """get an module directory or file in that directory, which should be relative to top
+    of build directory"""
+    p = os.path.join("#/mods", mod)
+    if fname is None:
+        return p
+    else:
+        return os.path.join(p, str(fname))
+
+
+##
+#  access to build directories
+##
+def _buildGet(env, mod, dirname, fname):
+    """get an build directory or file in that directory.  Only the basename of fname
+    is used, which might be a scons Node"""
+    p = os.path.join("#/build", mod, dirname)
+    if fname is None:
+        return p
+    else:
+        return os.path.join(p, os.path.basename(str(fname)))
+
+def buildLibDir(env, mod, fname=None):
+    """get lib output directory or file in that directory"""
+    return _buildGet(env, mod, "lib", fname)
+
+##
 # access to output directories is via function to allow for configuration
 # using env in the future
+##
 
 def _outputGet(env, dirname, fname):
     """get an output directory or file in that directory.  Only the basename of fname
@@ -34,47 +79,19 @@ def outputLibDir(env, fname=None):
     """get lib output directory or file in that directory"""
     return _outputGet(env, "lib", fname)
 
-def outputIncludeDir(env, fname=None):
-    """get include output directory or file in that directory"""
-    return _outputGet(env, "include", fname)
+##
+# Building and linking
+##
 
 def libFileName(libbase):
     "tack `lib' on the front of the library base name"
     return "lib" + libbase + ".a"
 
-##
-# Building and linking, with results in output directory.
-# this also copies includes to output.
-##
-
-def addOutputIncludeAlias(env, outInclude):
-    """an alias is create for all output includes, and only add the
-    alias to the defaults targets.  This prevents and up to date message
-    for each include. """
-    env.Default(env.Alias("outputIncludes", outInclude))
-
-def globInclude(env, includeDirs):
-    """get list of all include files (*.h) in the specified directories"""
-    inclFiles = []
-    for includeDir in includeDirs:
-        inclFiles.extend(env.Glob("{}/*.h".format(includeDir)))
-    return inclFiles
-
-def makeIncludesDepends(env, includeFiles):
-    "copy files to the run include directory"
-    # create dependencies so files are installed as needed and then insist they
-    # are installed
-    for incl in includeFiles:
-        env.Depends(outputIncludeDir(env, incl), incl)
-        oi = env.Install(outputIncludeDir(env), incl)
-        addOutputIncludeAlias(env, oi)
 
 def buildStaticLibrary(env, libBaseName, srcs):
     """link a static library"""
     bl = env.StaticLibrary(libFileName(libBaseName), srcs)
-    ol = env.Install(outputLibDir(env), bl)
-    env.Depends(ol, bl)
-    env.Default(ol)
+
 
 def getSrcPaths(srcDir, srcFiles):
     """Combine srcDir and srcFiles, If srcDir can be none, if srcFiles
@@ -138,13 +155,15 @@ libExternalPrefixes = ["/hive/groups/recon/local",   # hgwdev
                        "/usr/local",   # FreeBSD, Brew, etc
                        "/usr"]   # Ubuntu, etc
 
-def libAdd(env, inclDir, libDir, libBases, libDepends=None, libDefine=None):
+def libAdd(env, inclDirs, libDir, libBases, libDepends=None, libDefine=None):
     """add the paths to include and ibrary to the environments,
-    libBases can be a list or a string"""
+   inclDirs and libBases can be a list or a string"""
     # allow LIBS to be duplicate if needed, since linking is ordered
-    env.AppendUnique(CPPPATH=[inclDir])
+    if isinstance(inclDirs, str):
+        inclDirs = [inclDirs]
     if isinstance(libBases, str):
         libBases = [libBases]
+    env.AppendUnique(CPPPATH=inclDirs)
     env.Append(LIBS=libBases)
     env.AppendUnique(LIBPATH=[libDir])
     if libDepends is not None:
@@ -178,21 +197,28 @@ def libAddKyotoDatabase(env):
                libDepends=["z", "bz2", "pthread", "m", "-lstdc++"],
                useRPath=True)
 
-def libAddVariant(env, mod, libBases, libDepends=None, libDefine=None):
-    "add include and libraries in the variant build directory"
+def libAddMod(env, mod, inclDirs, libBase, libDepends=None, libDefine=None):
+    """add include and libraries in the variant build directory.  Include dirs maybe a string,
+    list or list of Nodes."""
+    if isinstance(inclDirs, str):
+        inclDirs = [inclDirs]
     libAdd(env,
-           os.path.join(outputIncludeDir(env)),
-           os.path.join(outputLibDir(env)),
-           libBases, libDepends=libDepends, libDefine=libDefine)
+           [_moduleGet(env, mod, i) for i in inclDirs],
+           os.path.join(buildLibDir(env, mod)),
+           [libBase], libDepends=libDepends, libDefine=libDefine)
 
 def libAddSonLib(env):
-    libAddVariant(env, "sonLib", SONLIB_LIB_NAME)
+    incDirs = ("sonLib/include", "cutest",
+               "matchingAndOrdering/include", "pinchesAndCacti/include",
+               "threeEdgeConnected/include")
+    libAddMod(env, SONLIB_MOD_NAME, incDirs, SONLIB_LIB_NAME)
 
 def libAddCuTest(env):
-    libAddVariant(env, "sonLib", CUTEST_LIB_NAME)
+    libAddMod(env, SONLIB_MOD_NAME, "cutest", CUTEST_LIB_NAME)
     
-def libAddCactus(env):
-    libAddVariant(env, "cactus", CACTUS_LIB_NAME)
-
 def libAddCPecan(env):
-    libAddVariant(env, "cPecan", CPECAN_LIB_NAME)
+    libAddMod(env, CPECAN_MOD_NAME, "include", CPECAN_LIB_NAME)
+
+def libAddCactus(env):
+    libAddMod(env, CACTUS_MOD_NAME, "api/include", CACTUS_LIB_NAME)
+
