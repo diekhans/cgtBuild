@@ -15,7 +15,7 @@ build:
 gitDirs = . ${modDirs}
 commit: ${gitDirs:%=%.commit}
 %.commit: checkCommitMsg
-	(cd $* && if [ "$$(git status --short)" != "" ] ; then  git commit -am '${msg}' ; fi)
+	(cd $* && if [ "$$(git status --short --untracked-files=no)" != "" ] ; then  git commit -am '${msg}' ; fi)
 
 checkCommitMsg:
 	@if [ "${msg}" = "" ] ; then echo "Error: must specify msg=xxx on commit" >/dev/stderr ;fi
