@@ -14,15 +14,17 @@ import os
 
 # module names
 SONLIB_MOD_NAME = "sonLib"
-CACTUS_MOD_NAME = "cactus"
 CPECAN_MOD_NAME = "cPecan"
+CACTUS_MOD_NAME = "cactus"
 
 
 # library base names
 SONLIB_LIB_NAME = "sonlib"
 CUTEST_LIB_NAME = "cutest"
-CACTUS_LIB_NAME = "cactus"
 CPECAN_LIB_NAME = "cpecan"
+CACTUS_LIB_NAME = "cactus"
+STCAF_LIB_NAME  = "stcaf"
+BLAST_LIB_NAME  = "blast"
 
 ##
 # Access to module files
@@ -51,7 +53,7 @@ def _buildGet(env, mod, dirname, fname):
 
 def buildLibDir(env, mod, fname=None):
     """get lib output directory or file in that directory"""
-    return _buildGet(env, mod, "lib", fname)
+    return _buildGet(env, mod, ".", fname)
 
 ##
 # access to output directories is via function to allow for configuration
@@ -220,5 +222,6 @@ def libAddCPecan(env):
     libAddMod(env, CPECAN_MOD_NAME, "include", CPECAN_LIB_NAME)
 
 def libAddCactus(env):
+    libAddMod(env, CACTUS_MOD_NAME, "caf/include", STCAF_LIB_NAME)
+    libAddMod(env, CACTUS_MOD_NAME, "blast/include", BLAST_LIB_NAME)
     libAddMod(env, CACTUS_MOD_NAME, "api/include", CACTUS_LIB_NAME)
-

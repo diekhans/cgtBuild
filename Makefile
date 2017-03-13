@@ -1,5 +1,6 @@
 # calls scons or git
 
+# git@github.com:lastz/lastz.git 1.04.00
 
 mods = sonLib cactus cPecan hal
 #lastz-dist

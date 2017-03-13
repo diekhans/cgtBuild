@@ -33,14 +33,13 @@ else:
 
 # use C++ to link, as we have C++ modules
 env.Replace(LINK=env['CXX'])
-env.Replace(LIBPREFIX="lib/")  # libraries in module build lib directory
 
 SConscript("mods/sonLib/sconscript", exports=("env"),
            variant_dir="build/sonLib", duplicate=False)
-# SConscript("mods/cPecan/sconscript", exports=("env"),
-#            variant_dir="build/cPecan", duplicate=False)
-# SConscript("mods/cactus/sconscript", exports=("env"),
-#            variant_dir="build/cactus", duplicate=False)
+SConscript("mods/cPecan/sconscript", exports=("env"),
+           variant_dir="build/cPecan", duplicate=False)
+SConscript("mods/cactus/sconscript", exports=("env"),
+           variant_dir="build/cactus", duplicate=False)
 
 # empty top level python package
 #env.Textfile(target=os.path.join(variantDir, "lib/py/cgt/__init__.py"),
