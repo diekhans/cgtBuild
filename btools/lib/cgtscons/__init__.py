@@ -3,6 +3,7 @@ Definitions and functions use for building CGT
 """
 from __future__ import print_function
 import os
+from SCons.Script import Copy, Chmod
 
 ##
 # Notes:
@@ -163,8 +164,29 @@ def envRelSymlink(env, source, target):
     env.Command(target, source, mkRelSymLink)
 
 
+##
+# python code
+##
+def installPyProgs(env, srcDir, srcs):
+    """Copy python programs to the install directory and make executable, read-only"""
+    for src in srcs:
+        op = env.Command(outputBinDir(env, src), os.path.join(srcDir, src),
+                         [Copy('$TARGET', '$SOURCE'),
+                          Chmod('$TARGET', "ugo-w,ugo+rw")])
+        env.Default(op)
+
+
+def installPyTest(env, srcDir, srcs):
+    """Copy a python test programs to the install directory and make executable, read-only"""
+    for src in srcs:
+        op = env.Command(outputTestBinDir(env, src), os.path.join(srcDir, src),
+                         [Copy('$TARGET', '$SOURCE'),
+                          Chmod('$TARGET', "ugo-w,ugo+rw")])
+        env.Default(op)
+
+
 ###
-# library dependencies
+# create library dependencies
 ###
     
 libExternalPrefixes = ["/hive/groups/recon/local",   # hgwdev
