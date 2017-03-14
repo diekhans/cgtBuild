@@ -90,9 +90,9 @@ def libFileName(libbase):
     return "lib" + libbase + ".a"
 
 
-def buildStaticLibrary(env, libBaseName, srcs):
+def buildStaticLibrary(env, libBaseName, srcPaths):
     """link a static library"""
-    bl = env.StaticLibrary(libFileName(libBaseName), srcs)
+    bl = env.StaticLibrary(libFileName(libBaseName), srcPaths)
 
 
 def getSrcPaths(srcDir, srcFiles):
@@ -111,21 +111,36 @@ def globSrcPaths(env, srcDir, globPat, excludes=[]):
     return env.Glob(os.path.join(srcDir, globPat),
                     exclude=excludePaths)
     
-
-def linkProg(env, progName, srcFiles):
-    """link a program, with specified srcs from srcFiles in srcDir.
-    If srcDir can be none, if srcFiles contains full paths"""
-    bp = env.Program(progName, srcFiles)
+def linkProg(env, prog, srcs):
+    """link a program, with specified C or C++ sources files.
+    The program name is derived from the first C or C++ file, unless specified"""
+    if prog is None:
+        prog = os.path.splitext(os.path.basename(srcs[0]))[0]
+    bp = env.Program(prog, srcs)
     op = env.Install(outputBinDir(env), bp)
     env.Default(op)
 
+def linkProgDir(env, prog, srcDir, srcs):
+    """link a program with srcs in srcDir..  The program name is derived from
+    the first C or C++ file, if none"""
+    linkProg(env, prog,
+             [os.path.join(srcDir, s) for s in srcs])
 
-def linkTestProg(env, progName, srcFiles):
-    """link a test program, with specified srcs from srcFiles in srcDir.
-    If srcDir can be none, if srcFiles contains full paths"""
-    bp = env.Program(progName, srcFiles)
+def linkTest(env, prog, srcs):
+    """link a test program, with specified C or C++ sources files.
+    The program name is derived from the first C or C++ file, unless specified"""
+    if prog is None:
+        prog = os.path.splitext(os.path.basename(srcs[0]))[0]
+    bp = env.Program(prog, srcs)
     op = env.Install(outputTestBinDir(env), bp)
     env.Default(op)
+
+def linkTestDir(env, prog, srcDir, srcs):
+    """link a test program with srcs in srcDir..  The program name is derived from
+    the first C or C++ file, if none"""
+    linkTest(env, prog,
+             [os.path.join(srcDir, s) for s in srcs])
+
 
 ##
 # make a symbolic link
