@@ -13,8 +13,8 @@ checkout and build the current tree.  They will change.
     * `cd cgtBuild`
   * use make to clone modules from markd's repo:
     * `make clone`
-  * build with scons:
-    * `make`
+  * build with scons using 32 cores:
+    * `nice scons -j 32`
     
 ## Other actions:
   * status of all cloned repos
