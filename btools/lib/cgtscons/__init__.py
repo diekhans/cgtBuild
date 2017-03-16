@@ -26,6 +26,7 @@ CPECAN_LIB_NAME = "cpecan"
 CACTUS_LIB_NAME = "cactus"
 STCAF_LIB_NAME  = "stcaf"
 BLAST_LIB_NAME  = "blast"
+STREFERENCE_LIB_NAME = "streference"
 
 ##
 # Access to module files
@@ -91,18 +92,25 @@ def libFileName(libbase):
     return "lib" + libbase + ".a"
 
 
-def buildStaticLibrary(env, libBaseName, srcPaths):
+def getCompiledObjs(env, srcDir, srcs):
+    "return path to compile objects in the variant directory"
+    # abspath will force it to point to the actual variant directory, not inside of module
+    vardir = env.Dir(srcDir).abspath
+    return [os.path.join(vardir, os.path.splitext(str(s))[0] + ".o") for s in  srcs]
+
+
+def buildStaticLibrary(env, libBaseName, srcs):
     """link a static library"""
-    bl = env.StaticLibrary(libFileName(libBaseName), srcPaths)
+    bl = env.StaticLibrary(libFileName(libBaseName), srcs)
+
+def buildStaticLibraryDir(env, libBaseName, srcDir, srcs):
+    """link a static library for listed source files in srcDir """
+    bl = env.StaticLibrary(libFileName(libBaseName), getSrcPaths(srcDir, srcs))
 
 
 def getSrcPaths(srcDir, srcFiles):
-    """Combine srcDir and srcFiles, If srcDir can be none, if srcFiles
-    contains full paths"""
-    if srcDir is None:
-        return srcFiles
-    else:
-        return [os.path.join(srcDir, sf) for sf in srcFiles]
+    """Combine srcDir and srcFiles"""
+    return [os.path.join(srcDir, sf) for sf in srcFiles]
     
 
 def globSrcPaths(env, srcDir, globPat, excludes=[]):
@@ -121,12 +129,6 @@ def linkProg(env, prog, srcs):
     op = env.Install(outputBinDir(env), bp)
     env.Default(op)
 
-def linkProgDir(env, prog, srcDir, srcs):
-    """link a program with srcs in srcDir..  The program name is derived from
-    the first C or C++ file, if none"""
-    linkProg(env, prog,
-             [os.path.join(srcDir, s) for s in srcs])
-
 def linkTest(env, prog, srcs):
     """link a test program, with specified C or C++ sources files.
     The program name is derived from the first C or C++ file, unless specified"""
@@ -135,12 +137,6 @@ def linkTest(env, prog, srcs):
     bp = env.Program(prog, srcs)
     op = env.Install(outputTestBinDir(env), bp)
     env.Default(op)
-
-def linkTestDir(env, prog, srcDir, srcs):
-    """link a test program with srcs in srcDir..  The program name is derived from
-    the first C or C++ file, if none"""
-    linkTest(env, prog,
-             [os.path.join(srcDir, s) for s in srcs])
 
 
 ##
@@ -167,19 +163,19 @@ def envRelSymlink(env, source, target):
 ##
 # python code
 ##
-def installPyProgs(env, srcDir, srcs):
+def installPyProgs(env, srcs):
     """Copy python programs to the install directory and make executable, read-only"""
     for src in srcs:
-        op = env.Command(outputBinDir(env, src), os.path.join(srcDir, src),
+        op = env.Command(outputBinDir(env, src),src,
                          [Copy('$TARGET', '$SOURCE'),
                           Chmod('$TARGET', "ugo-w,ugo+rw")])
         env.Default(op)
 
 
-def installPyTest(env, srcDir, srcs):
+def installPyTest(env, srcs):
     """Copy a python test programs to the install directory and make executable, read-only"""
     for src in srcs:
-        op = env.Command(outputTestBinDir(env, src), os.path.join(srcDir, src),
+        op = env.Command(outputTestBinDir(env, src), src,
                          [Copy('$TARGET', '$SOURCE'),
                           Chmod('$TARGET', "ugo-w,ugo+rw")])
         env.Default(op)
@@ -259,6 +255,7 @@ def libAddCPecan(env):
     libAddMod(env, CPECAN_MOD_NAME, "include", CPECAN_LIB_NAME)
 
 def libAddCactus(env):
+    libAddMod(env, CACTUS_MOD_NAME, "reference/include", STREFERENCE_LIB_NAME)
     libAddMod(env, CACTUS_MOD_NAME, "caf/include", STCAF_LIB_NAME)
     libAddMod(env, CACTUS_MOD_NAME, "blast/include", BLAST_LIB_NAME)
     libAddMod(env, CACTUS_MOD_NAME, "api/include", CACTUS_LIB_NAME)
