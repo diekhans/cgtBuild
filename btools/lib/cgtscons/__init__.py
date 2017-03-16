@@ -83,6 +83,31 @@ def outputLibDir(env, fname=None):
     """get lib output directory or file in that directory"""
     return _outputGet(env, "lib", fname)
 
+
+##
+# file paths
+##
+
+def listify(value):
+    "if value is not a list-like, turn it into a list"
+    if getattr(value, "__iter__", None) is None:
+        return [value]
+    else:
+        return value
+
+def getSrcPaths(srcDir, srcFiles):
+    """Combine srcDir and srcFiles"""
+    return [os.path.join(srcDir, sf) for sf in listify(srcFiles)]
+    
+
+def globSrcPaths(env, srcDir, globPat, excludes=[]):
+    """glob for all files in srcDir matching globPat, excluding excludes
+    in srcDir.  Excludes can be list-like or single-instance string."""
+    excludePaths = [os.path.join(srcDir, f) for f in listify(excludes)]
+    return env.Glob(os.path.join(srcDir, globPat),
+                    exclude=excludePaths)
+   
+
 ##
 # Building and linking
 ##
@@ -93,36 +118,24 @@ def libFileName(libbase):
 
 
 def getCompiledObjs(env, srcDir, srcs):
-    "return path to compile objects in the variant directory"
+    """return path to compile objects in the variant directory, srcs can be
+    list-like or single-instance string."""
+
     # abspath will force it to point to the actual variant directory, not inside of module
     vardir = env.Dir(srcDir).abspath
-    return [os.path.join(vardir, os.path.splitext(str(s))[0] + ".o") for s in  srcs]
+    return [os.path.join(vardir, os.path.splitext(str(s))[0] + ".o") for s in  listify(srcs)]
 
 
 def buildStaticLibrary(env, libBaseName, srcs):
-    """link a static library"""
-    bl = env.StaticLibrary(libFileName(libBaseName), srcs)
-
-def buildStaticLibraryDir(env, libBaseName, srcDir, srcs):
-    """link a static library for listed source files in srcDir """
-    bl = env.StaticLibrary(libFileName(libBaseName), getSrcPaths(srcDir, srcs))
+    """link a static library.   srcs can be list-like or single-instance string."""
+    bl = env.StaticLibrary(libFileName(libBaseName), listify(srcs))
 
 
-def getSrcPaths(srcDir, srcFiles):
-    """Combine srcDir and srcFiles"""
-    return [os.path.join(srcDir, sf) for sf in srcFiles]
-    
-
-def globSrcPaths(env, srcDir, globPat, excludes=[]):
-    """glob for all files in srcDir matching globPat, excluding excludes
-    in srcDir"""
-    excludePaths = [os.path.join(srcDir, f) for f in excludes]
-    return env.Glob(os.path.join(srcDir, globPat),
-                    exclude=excludePaths)
-    
 def linkProg(env, prog, srcs):
     """link a program, with specified C or C++ sources files.
+    srcs can be list-like or single-instance string.
     The program name is derived from the first C or C++ file, unless specified"""
+    srcs = listify(srcs)
     if prog is None:
         prog = os.path.splitext(os.path.basename(srcs[0]))[0]
     bp = env.Program(prog, srcs)
@@ -131,7 +144,9 @@ def linkProg(env, prog, srcs):
 
 def linkTest(env, prog, srcs):
     """link a test program, with specified C or C++ sources files.
+    srcs can be list-like or single-instance string.
     The program name is derived from the first C or C++ file, unless specified"""
+    srcs = listify(srcs)
     if prog is None:
         prog = os.path.splitext(os.path.basename(srcs[0]))[0]
     bp = env.Program(prog, srcs)
@@ -164,8 +179,9 @@ def envRelSymlink(env, source, target):
 # python code
 ##
 def installPyProgs(env, srcs):
-    """Copy python programs to the install directory and make executable, read-only"""
-    for src in srcs:
+    """Copy python programs to the install directory and make executable,
+    read-only. srcs can be list-like or single-instance string."""
+    for src in listify(srcs):
         op = env.Command(outputBinDir(env, src),src,
                          [Copy('$TARGET', '$SOURCE'),
                           Chmod('$TARGET', "ugo-w,ugo+rw")])
@@ -173,8 +189,10 @@ def installPyProgs(env, srcs):
 
 
 def installPyTest(env, srcs):
-    """Copy a python test programs to the install directory and make executable, read-only"""
-    for src in srcs:
+    """Copy a python test programs to the install directory and make
+    executable, read-only.  srcs can be list-like or single-instance
+    string."""
+    for src in listify(srcs):
         op = env.Command(outputTestBinDir(env, src), src,
                          [Copy('$TARGET', '$SOURCE'),
                           Chmod('$TARGET', "ugo-w,ugo+rw")])
@@ -192,23 +210,22 @@ libExternalPrefixes = ["/hive/groups/recon/local",   # hgwdev
 
 def libAdd(env, inclDirs, libDir, libBases, libDepends=None, libDefine=None):
     """add the paths to include and ibrary to the environments,
-   inclDirs and libBases can be a list or a string"""
+   inclDirs, libBases, libDepends, and libDefine can be a list-like or a string"""
     # allow LIBS to be duplicate if needed, since linking is ordered
-    if isinstance(inclDirs, str):
-        inclDirs = [inclDirs]
-    if isinstance(libBases, str):
-        libBases = [libBases]
+    inclDirs = listify(inclDirs)
+    libBases = listify(libBases)
     env.AppendUnique(CPPPATH=inclDirs)
     env.Append(LIBS=libBases)
     env.AppendUnique(LIBPATH=[libDir])
     if libDepends is not None:
-        env.Append(LIBS=libDepends)
+        env.Append(LIBS=listify(libDepends))
     if libDefine is not None:
-        env.Append(CPPDEFINES=[libDefine])
+        env.Append(CPPDEFINES=listify(libDefine))
 
 def libFindPrefix(inclFile, prefixes):
-    "search for the prefix for a library based on a include file"
-    for prefix in prefixes:
+    """search for the prefix for a library based on a include file.  prefix can
+    be list-like or single-instance string."""
+    for prefix in listify(prefixes):
         if os.path.exists(os.path.join(prefix, "include", inclFile)):
             return prefix
     raise Exception("can't find header {} on prefixes: {}".format(inclFile, prefixes))
