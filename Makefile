@@ -7,7 +7,7 @@ mods = sonLib cactus cPecan hal
 modDirs = ${mods:%=mods/%}
 gitDirs = . ${modDirs}
 
-.PHONY: build clone commit push clean savebak
+.PHONY: build clone commit status push clean savebak
 
 build:
 	scons
@@ -24,11 +24,12 @@ commit: ${gitDirs:%=%.commit}
 	(cd $* && if [ "$$(git status --short --untracked-files=no)" != "" ] ; then  git commit -am '${msg}' ; fi)
 
 checkCommitMsg:
-	@if [ "${msg}" = "" ] ; then echo "Error: must specify msg=xxx on commit" >/dev/stderr ;fi
+	@if [ "${msg}" = "" ] ; then echo "Error: must specify msg=xxx on commit" >/dev/stderr && exit 1 ;fi
 
 # status
 status: ${gitDirs:%=%.status}
 %.status:
+	@echo "======= $* ======"
 	(cd $* && git status)
 
 # push

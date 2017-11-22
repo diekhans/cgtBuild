@@ -5,4 +5,5 @@
 .emacs.bak
 /build
 /mods
-.sconsign.dblite 
+.sconsign.dblite
+.emacs.bak
