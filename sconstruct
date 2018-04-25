@@ -26,9 +26,9 @@ elif os.uname()[0] == "Darwin":
     env.Append(CXXFLAGS=cxx11Flags + warnOps)
 else:
     # modern linux
-    env.Replace(CC= "gcc")
+    env.Replace(CC= "gcc-4.8")
     env.Append(CFLAGS=c99Flags + warnOps)
-    env.Replace(CXX="g++")
+    env.Replace(CXX="g++-4.8")
     env.Append(CXXFLAGS=cxx11Flags + warnOps)
 
 # use C++ to link, as we have C++ modules
@@ -44,4 +44,3 @@ SConscript("mods/cactus/sconscript", exports=("env"),
 # empty top level python package
 #env.Textfile(target=os.path.join(variantDir, "lib/py/cgt/__init__.py"),
 #             source=[])
-             

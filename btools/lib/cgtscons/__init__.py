@@ -98,7 +98,7 @@ def listify(value):
 def getSrcPaths(srcDir, srcFiles):
     """Combine srcDir and srcFiles"""
     return [os.path.join(srcDir, sf) for sf in listify(srcFiles)]
-    
+
 
 def globSrcPaths(env, srcDir, globPat, excludes=[]):
     """glob for all files in srcDir matching globPat, excluding excludes
@@ -106,7 +106,7 @@ def globSrcPaths(env, srcDir, globPat, excludes=[]):
     excludePaths = [os.path.join(srcDir, f) for f in listify(excludes)]
     return env.Glob(os.path.join(srcDir, globPat),
                     exclude=excludePaths)
-   
+
 
 ##
 # Building and linking
@@ -202,7 +202,7 @@ def installPyTest(env, srcs):
 ###
 # create library dependencies
 ###
-    
+
 libExternalPrefixes = ["/hive/groups/recon/local",   # hgwdev
                        "/opt/local",   # OS/X MacPorts
                        "/usr/local",   # FreeBSD, Brew, etc
@@ -242,10 +242,10 @@ def libFindAdd(env, inclFile, libBases, prefixes, libDepends=None, libDefine=Non
         env.AppendUnique(RPATH=[os.path.join(prefix, "lib")])
 
 def libAddKyotoDatabase(env):
-    libFindAdd(env, "tcbdb.h",
-               ["tokyocabinet", "kyototycoon", "kyotocabinet"],
+    libFindAdd(env, "kcdb.h",
+               ["kyototycoon", "kyotocabinet"],
                libExternalPrefixes,
-               libDefine="HAVE_TOKYO_CABINET=1",
+               libDefine="HAVE_KYOTO_TYCOON=1",
                libDepends=["z", "bz2", "pthread", "m", "-lstdc++"],
                useRPath=True)
 
@@ -267,7 +267,7 @@ def libAddSonLib(env):
 
 def libAddCuTest(env):
     libAddMod(env, SONLIB_MOD_NAME, "cutest", CUTEST_LIB_NAME)
-    
+
 def libAddCPecan(env):
     libAddMod(env, CPECAN_MOD_NAME, "include", CPECAN_LIB_NAME)
 
